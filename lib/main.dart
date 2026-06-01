@@ -196,12 +196,40 @@ class _MyHomePageState extends State<MyHomePage> {
                   itemCount: _notes.length,
                   itemBuilder: (context, index) {
                     return ListTile(
+                      contentPadding: const EdgeInsets.fromLTRB(6, 4, 4, 4),
+
+                      selected: _notes[index].id == _selectedIndex,
+                      selectedTileColor: lightActive,
+                      textColor: lightMainText,
+                      selectedColor: lightMainText,
+                      onTap: () {
+                        _selectNote(_notes[index]); 
+                      },
+
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadiusGeometry.circular(19.0)
+                      ),
+
+                      titleTextStyle: const TextStyle(
+                        fontSize: 17.0,
+                        fontWeight: FontWeight.bold,
+                        color: lightMainText,
+                      ),
+
+                      subtitleTextStyle: const TextStyle(
+                        fontSize: 14.0,
+                        color: lightSecondText
+                      ),
+
                       title: Text(_notes[index].title.isEmpty 
                       ? 'New Note' 
                       : _notes[index].title),
-                      onTap: () {
-                        _selectNote(_notes[index]);
-                      },
+                      subtitle: Text(_notes[index].text.isEmpty
+                      ? 'Note Text'
+                      : _notes[index].text),
+                      // onTap: () {
+                      //   _selectNote(_notes[index]);
+                      // },
                     );
                   },
               ),
