@@ -1,25 +1,37 @@
-name: Flutter Build
+name: Flutter CI
 
-on: [push, pull_request]
+# Скрипт запускается при каждом пуше или пулл-реквесте в ветки "main" и "master"
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
 
 jobs:
   build:
+    # Исполняемая среда — виртуальная машина на Ubuntu
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Скачиваем код репозитория
-      - uses: actions/checkout@v4
+      # 1. Клонируем репозиторий с вашим кодом на виртуальную машину
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      # 2. Устанавливаем Flutter SDK (вместо обычного Dart)
+      # 2. Устанавливаем Flutter SDK нужной версии (вместо некорректного Dart SDK)
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable' # или укажите нужную версию, например: '3.22.0'
+          channel: 'stable' # Автоматически скачает последнюю стабильную версию Flutter
+          cache: true       # Включает кеширование для ускорения последующих сборок
 
-      # 3. Теперь команда отработает корректно
+      # 3. Скачиваем все зависимости, указанные в вашем pubspec.yaml
       - name: Install dependencies
         run: flutter pub get
 
-      # 4. (Опционально) Проверка кода или запуск тестов
+      # 4. Проверяем код на наличие ошибок и предупреждений (Linter)
+      - name: Analyze project source
+        run: flutter analyze
+
+      # 5. Запускаем юнит-тесты проекта
       - name: Run tests
         run: flutter test
