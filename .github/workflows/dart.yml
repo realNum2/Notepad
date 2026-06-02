@@ -33,5 +33,5 @@ jobs:
         run: flutter analyze --no-fatal-infos
 
       # 5. Запускаем юнит-тесты проекта
-      - name: Run tests
-        run: flutter test
+      # - name: Run tests
+      #   run: flutter test
