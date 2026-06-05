@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'dart:ui';
-
+import 'package:flutter_quill/flutter_quill.dart';
+import 'package:markdown_quill/markdown_quill.dart';
 import 'package:flutter/material.dart';
 import 'package:my_app/note.dart';
 // import 'app_colors.dart';
@@ -82,7 +84,7 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
 
   final TextEditingController _titleController = TextEditingController();
-  final TextEditingController _textController = TextEditingController();
+  final QuillController _textController = QuillController.basic();
 
   List<Note> _notes = [];
   String? _selectedIndex;
@@ -101,7 +103,7 @@ class _MyHomePageState extends State<MyHomePage> {
     final selectedNote = _notes.indexWhere((element) => element.id == _selectedIndex);
     if(selectedNote != -1) {
       setState(() {
-        _notes[selectedNote] = Note(id: _selectedIndex!, title: _titleController.text, text: _textController.text);
+        _notes[selectedNote] = Note(id: _selectedIndex!, title: _titleController.text, text: jsonEncode(_textController.document.toDelta().toJson()));
       });
     }
   }
@@ -111,18 +113,81 @@ class _MyHomePageState extends State<MyHomePage> {
       _selectedIndex = note.id;
 
       _titleController.text = note.title;
-      _textController.text = note.text;
+
+      if (note.text.isNotEmpty) {
+            _textController.document = Document.fromJson(
+                jsonDecode(note.text) as List
+            );
+        } else {
+            _textController.document = Document();
+        }
     });
   }
 
+  void _deleteNote() {
+    final deletedNote = _notes.indexWhere((element) => element.id == _selectedIndex);
+    
+    
+    setState(() {
+      _notes.removeAt(deletedNote);
+      _selectedIndex = null;
+    });
+  }
+
+  void _export() {}
+
+  void _numderList() {
+  final selected = _textController.selection;
+
+  final isNum = _textController.getSelectionStyle().attributes.containsKey(Attribute.ol.key);
+
+  _textController.formatSelection(
+    isNum ? Attribute.clone(Attribute.ol, null) : Attribute.ol,
+  );
+  }
+
+  void _dotList() {
+  final selected = _textController.selection;
+
+  final isDot = _textController.getSelectionStyle().attributes.containsKey(Attribute.ul.key);
+
+  _textController.formatSelection(
+    isDot ? Attribute.clone(Attribute.ul, null) : Attribute.ul,
+  );
+  }
+
+  void _makeBold() {
+    final selected = _textController.selection;
+
+    if (selected.isCollapsed) {
+    return; 
+  }
+
+  final isBold = _textController.getSelectionStyle().attributes.containsKey(Attribute.bold.key);
+
+  _textController.formatSelection(
+    isBold ? Attribute.clone(Attribute.bold, null) : Attribute.bold,
+  );
+  }
+
+  void _makeItalic() {
+    final selected = _textController.selection;
+
+    if (selected.isCollapsed) {
+    return; 
+  }
+
+  final isItalic = _textController.getSelectionStyle().attributes.containsKey(Attribute.italic.key);
+
+  _textController.formatSelection(
+    isItalic ? Attribute.clone(Attribute.italic, null) : Attribute.italic,
+  );
+  }
+
+
   @override
   Widget build(BuildContext context) {
-    // final screenSize = MediaQuery.of(context).size;
     return Scaffold(
-      // appBar: AppBar(
-      //   backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-      //   title: Text(widget.title),
-      // ),
       body: Row(
         children: [
           
@@ -180,13 +245,6 @@ class _MyHomePageState extends State<MyHomePage> {
                     Icon(AppIcons.add),
                     SizedBox(width: 8),
                     Text('Add Note')
-                    // Text(
-                    //   String.fromCharCode(61440),
-                    //   style: TextStyle(
-                    //     fontFamily: 'AppIcons',
-                    //     fontSize: 40
-                    //   ),
-                    // )
                     ],
                   ),
                 ),
@@ -224,51 +282,142 @@ class _MyHomePageState extends State<MyHomePage> {
                       title: Text(_notes[index].title.isEmpty 
                       ? 'New Note' 
                       : _notes[index].title),
-                      subtitle: Text(_notes[index].text.isEmpty
-                      ? 'Note Text'
-                      : _notes[index].text),
-                      // onTap: () {
-                      //   _selectNote(_notes[index]);
-                      // },
-                    );
+                      subtitle: Text(() {
+                        try {
+                            if (_notes[index].text.isEmpty) return 'Note Text';
+                            return Document.fromJson(jsonDecode(_notes[index].text) as List)
+                                .toPlainText()
+                                .trim();
+                        } catch (e) {
+                            return 'Note Text';
+                        }
+                    }()));
                   },
               ),
               ),
             ],
           ),
         ),
-      ),
-
-          Expanded(child: Container(
-            color: lightMainBG,
-            child: _selectedIndex == null 
-            ? Center(child: Text('Select or create new note'),)
-            : Column(children: [Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: TextField(
-                    controller: _titleController,
-                    decoration: InputDecoration(
-                    hintText: 'Note Title', 
-                  ),
-                )
-                ),
-
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: TextField(
-                    controller: _textController,
-                    maxLines: null,
-                    keyboardType: TextInputType.multiline,
-                    decoration: InputDecoration(
-                    hintText: 'Note text...',
-                    border: InputBorder.none,
-                  ),
-                )
-                )])
-            )
           ),
-        ],
-      ),
+      
+          
+          Expanded(
+  child: Container(
+    color: lightMainBG,
+    child: _selectedIndex == null
+      ? Center(child: Text('Select or create new note'))
+      : Column(
+          children: [
+            // Toolbar
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Align(
+                alignment: Alignment.topRight,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Кнопки форматирования
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 2.0, vertical: 2.0),
+                      decoration: BoxDecoration(
+                        color: lightSecondBG,
+                        border: Border.all(color: lightBorder.withOpacity(0.6)),
+                        borderRadius: BorderRadius.circular(32.0),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(onPressed: _makeBold, icon: Icon(AppIcons.bold), iconSize: 14),
+                          IconButton(onPressed: _makeItalic, icon: Icon(AppIcons.italic), iconSize: 14),
+                          IconButton(onPressed: _numderList, icon: Icon(AppIcons.listNumber), iconSize: 14),
+                          IconButton(onPressed: _dotList, icon: Icon(AppIcons.listDots), iconSize: 14),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8.0),
+                    // Кнопка экспорта
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 2.0, vertical: 2.0),
+                      decoration: BoxDecoration(
+                        color: lightSecondBG,
+                        border: Border.all(color: lightBorder.withOpacity(0.6)),
+                        borderRadius: BorderRadius.circular(32.0),
+                      ),
+                      child: IconButton(onPressed: _export, icon: Icon(AppIcons.export)),
+                    ),
+                    const SizedBox(width: 8.0),
+                    // Кнопка удаления
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 2.0, vertical: 2.0),
+                      decoration: BoxDecoration(
+                        color: lightSecondBG,
+                        border: Border.all(color: lightBorder.withOpacity(0.6)),
+                        borderRadius: BorderRadius.circular(32.0),
+                      ),
+                      child: IconButton(
+                        icon: Icon(AppIcons.delete),
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return AlertDialog(
+                                title: Text('Delete?'),
+                                content: Text('Are you sure?'),
+                                actions: [
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: lightThirdBg,
+                                      foregroundColor: lightMainText,
+                                    ),
+                                    onPressed: () => Navigator.pop(context),
+                                    child: Text('Cancel'),
+                                  ),
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: error,
+                                      foregroundColor: buttonText,
+                                    ),
+                                    onPressed: _deleteNote,
+                                    child: Text('Delete'),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            // Редактор
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: TextField(
+                controller: _titleController,
+                decoration: InputDecoration(
+                  hintText: "Enter note title",
+                  border: UnderlineInputBorder(
+                    borderSide: BorderSide(color: lightBorder),
+                  )
+                ),
+              ),
+            ),
+            
+            Expanded(
+              child: QuillEditor.basic(
+                controller: _textController,
+                config: const QuillEditorConfig(
+                  placeholder: 'Start typing...'
+                ),
+              ),
+            ),
+          ],
+        ),
+  ),
+),
+],),
           
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _saveNote,
