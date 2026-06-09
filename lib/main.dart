@@ -4,30 +4,13 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:markdown_quill/markdown_quill.dart';
 import 'package:flutter/material.dart';
 import 'package:my_app/note.dart';
-// import 'app_colors.dart';
-
+import 'app_colors.dart';
+import 'app_localization.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 // _________________________________________________________
-// CONSTANTS
+// ICONS
 // _________________________________________________________
-
-  const Color accent = Color(0xFF6c5ce7);
-  const Color accentHover = Color(0xFF5a4bd1);
-  const Color accentActive = Color(0xFF483cb8);
-  const Color error = Color(0xFFFF3B30);
-  const Color sucess = Color(0xFF34C759);
-  const Color buttonText = Color(0xFFFFFFFF);
-
-  // ------Light Theme------
-  const Color lightMainBG = Color(0xFFEDEDED);
-  const Color lightSecondBG = Color(0xFFE1E1E1);
-  const Color lightThirdBg = Color(0xFFD5D5D5);
-  const Color lightBorder = Color(0xFFC5C5C5);
-  const Color lightMainText = Color(0xFF151515);
-  const Color lightSecondText = Color(0xFF4F4F4F);
-  const Color lightDisabledText = Color(0xFF999999);
-  const Color lightHover = Color(0xFFC0C0C0);
-  const Color lightActive = Color(0xFFE0E0E0);
 
   class AppIcons {
     static const String _fontFamily = 'Icons';
@@ -40,12 +23,18 @@ import 'package:my_app/note.dart';
     static const IconData listNumber = IconData(61443, fontFamily: _fontFamily);
     static const IconData save = IconData(61441, fontFamily: _fontFamily);
     static const IconData bold = IconData(61442, fontFamily: _fontFamily);
+    static const IconData profile = IconData(61450, fontFamily: _fontFamily);
+    static const IconData theme = IconData(61448, fontFamily: _fontFamily);
+    static const IconData language = IconData(61449, fontFamily: _fontFamily);
   }
 
 
 // _________________________________________________________
 // APP
 // _________________________________________________________
+
+final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
+final ValueNotifier<String> langNotifier = ValueNotifier('en');
 
 void main() {
   runApp(const MyApp());
@@ -57,17 +46,50 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
+    return ValueListenableBuilder<ThemeMode> (
+      valueListenable: themeNotifier,
+      builder: (context, currentMode, child) {
+
+        return ValueListenableBuilder<String>(
+          valueListenable: langNotifier,
+          builder: (context, currentLang, child) {
+            
+    
+
     return MaterialApp(
+      locale: Locale(currentLang.isEmpty ? 'en' : currentLang, ''),
+      supportedLocales: [
+        Locale('en', ''),
+        Locale('ru', ''),
+      ],
+      localizationsDelegates: const [
+        appLocalizationsDelegate,               // Ваш кастомный делегат
+        GlobalMaterialLocalizations.delegate,   // ДОБАВИТЬ: Переводы для Material-виджетов
+        GlobalWidgetsLocalizations.delegate,    // ДОБАВИТЬ: Переводы для базовых виджетов
+        GlobalCupertinoLocalizations.delegate,  // ДОБАВИТЬ: Переводы для Cupertino (iOS) стилей
+      ],
       title: 'Flutter Demo',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
+        brightness: Brightness.light,
+        extensions: const [AppColors.light],
         fontFamily: 'Sans3',
-        // useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: accent,),
-        scaffoldBackgroundColor: lightMainBG,
-        primaryColor: accent,
+        scaffoldBackgroundColor: AppColors.light.primaryBG,
       ),
-      home: const MyHomePage(title: 'Notes mini app'),
+      darkTheme: ThemeData(
+        brightness: Brightness.dark,
+        extensions: const [AppColors.dark],
+        fontFamily: 'Sans3',
+        scaffoldBackgroundColor: AppColors.dark.primaryBG, 
+      ),
+      themeMode: currentMode,
+      home: Builder(
+        builder: (context) => MyHomePage(title: 'Notes mini app'),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
@@ -134,8 +156,18 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  void _export() {}
+  void _export() {
 
+  }
+
+    // void toggleLanguage() {
+    // if (langNotifier.value == 'ru') {
+      // langNotifier.value = 'en';
+    // } else {
+      // langNotifier.value = 'ru';
+    // }
+  // }
+// 
   void _numderList() {
   final selected = _textController.selection;
 
@@ -200,9 +232,10 @@ class _MyHomePageState extends State<MyHomePage> {
             width: 256,
             height: double.infinity,
             decoration: BoxDecoration(
-              border: Border.all(color: lightBorder.withOpacity(0.6)),
+              border: Border.all(color: context.colors.border.withOpacity(0.6)),
               borderRadius: BorderRadius.circular(25),
-              color: lightSecondBG.withOpacity(0.6),
+              color: context.colors.secondBG.withOpacity(0.6),
+              
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.06),
@@ -225,18 +258,18 @@ class _MyHomePageState extends State<MyHomePage> {
                   padding: EdgeInsets.all(0),
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: accent,
-                      foregroundColor: buttonText,
+                      backgroundColor: context.colors.accent,
+                      foregroundColor: Color(0xFFFFFFFF),
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(19.0))
                   ).copyWith(backgroundColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {
                     if (states.contains(WidgetState.hovered)) {
-                      return accentHover;
+                      return context.colors.accentHover;
                     }
                     if (states.contains(WidgetState.pressed)) {
-                      return accentActive;
+                      return context.colors.accentActive;
                     }
-                    return accent;
+                    return context.colors.accent;
                   })),
                   onPressed: _addNote,
                   child: Row(
@@ -244,7 +277,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     children: [
                     Icon(AppIcons.add),
                     SizedBox(width: 8),
-                    Text('Add Note')
+                    Text(context.l1n('addNote'))
                     ],
                   ),
                 ),
@@ -257,9 +290,9 @@ class _MyHomePageState extends State<MyHomePage> {
                       contentPadding: const EdgeInsets.fromLTRB(6, 4, 4, 4),
 
                       selected: _notes[index].id == _selectedIndex,
-                      selectedTileColor: lightActive,
-                      textColor: lightMainText,
-                      selectedColor: lightMainText,
+                      selectedTileColor: context.colors.active,
+                      textColor: context.colors.primaryText,
+                      selectedColor: context.colors.primaryText,
                       onTap: () {
                         _selectNote(_notes[index]); 
                       },
@@ -268,15 +301,15 @@ class _MyHomePageState extends State<MyHomePage> {
                         borderRadius: BorderRadiusGeometry.circular(19.0)
                       ),
 
-                      titleTextStyle: const TextStyle(
+                      titleTextStyle: TextStyle(
                         fontSize: 17.0,
                         fontWeight: FontWeight.bold,
-                        color: lightMainText,
+                        color: context.colors.primaryText,
                       ),
 
-                      subtitleTextStyle: const TextStyle(
+                      subtitleTextStyle: TextStyle(
                         fontSize: 14.0,
-                        color: lightSecondText
+                        color: context.colors.secondText
                       ),
 
                       title: Text(_notes[index].title.isEmpty 
@@ -295,6 +328,33 @@ class _MyHomePageState extends State<MyHomePage> {
                   },
               ),
               ),
+              Container(
+                decoration: BoxDecoration(
+                  color: context.colors.thirdBG,
+                  borderRadius: BorderRadius.circular(19)
+
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    IconButton(onPressed: (){
+                      if (themeNotifier.value == ThemeMode.light) {
+                        themeNotifier.value = ThemeMode.dark;
+                      } else {
+                        themeNotifier.value = ThemeMode.light;
+                      }
+                    }, icon: Icon(AppIcons.theme), iconSize: 24, color: context.colors.primaryText,),
+                    IconButton(onPressed: (){setState(() { // Заставляет MyHomePage обновить все свои строки context.l1n()
+    if (langNotifier.value == 'ru') {
+      langNotifier.value = 'en';
+    } else {
+      langNotifier.value = 'ru';
+    }
+  });}, icon: Icon(AppIcons.language), iconSize: 24, color: context.colors.primaryText,),
+                    IconButton(onPressed: (){}, icon: Icon(AppIcons.profile), iconSize: 24, color: context.colors.disabledText,)
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -302,122 +362,182 @@ class _MyHomePageState extends State<MyHomePage> {
       
           
           Expanded(
-  child: Container(
-    color: lightMainBG,
-    child: _selectedIndex == null
-      ? Center(child: Text('Select or create new note'))
-      : Column(
-          children: [
-            // Toolbar
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Align(
-                alignment: Alignment.topRight,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Кнопки форматирования
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 2.0, vertical: 2.0),
-                      decoration: BoxDecoration(
-                        color: lightSecondBG,
-                        border: Border.all(color: lightBorder.withOpacity(0.6)),
-                        borderRadius: BorderRadius.circular(32.0),
+            child: Container(
+              color: context.colors.primaryBG,
+              child: _selectedIndex == null
+                ? Center(child: Text(context.l1n('selectNote')))
+                : Column(
+                    children: [
+                      // Toolbar
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Align(
+                          alignment: Alignment.topRight,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // Кнопки форматирования
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 2.0, vertical: 2.0),
+                                decoration: BoxDecoration(
+                                  color: context.colors.secondBG,
+                                  border: Border.all(color: context.colors.border.withOpacity(0.6)),
+                                  borderRadius: BorderRadius.circular(32.0),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(onPressed: _makeBold, icon: Icon(AppIcons.bold), iconSize: 14),
+                                    IconButton(onPressed: _makeItalic, icon: Icon(AppIcons.italic), iconSize: 14),
+                                    IconButton(onPressed: _numderList, icon: Icon(AppIcons.listNumber), iconSize: 14),
+                                    IconButton(onPressed: _dotList, icon: Icon(AppIcons.listDots), iconSize: 14),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8.0),
+                              // Кнопка экспорта
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 2.0, vertical: 2.0),
+                                decoration: BoxDecoration(
+                                  color: context.colors.secondBG,
+                                  border: Border.all(color: context.colors.border.withOpacity(0.6)),
+                                  borderRadius: BorderRadius.circular(32.0),
+                                ),
+                                child: IconButton(onPressed: _export, icon: Icon(AppIcons.export)),
+                              ),
+                              const SizedBox(width: 8.0),
+                              // Кнопка удаления
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 2.0, vertical: 2.0),
+                                decoration: BoxDecoration(
+                                  color: context.colors.secondBG,
+                                  border: Border.all(color: context.colors.border.withOpacity(0.6)),
+                                  borderRadius: BorderRadius.circular(32.0),
+                                ),
+                                child: IconButton(
+                                  icon: Icon(AppIcons.delete),
+                                  onPressed: () {
+                                    showDialog(
+                                      context: context,
+                                      builder: (BuildContext context) {
+                                        return Center(
+                                          child: Container(
+                                            padding: const EdgeInsets.all(16.0),
+                                            width: 512,
+                                            // Высоту убрали, чтобы контент не обрезался при изменении шрифтов
+                                            decoration: BoxDecoration(
+                                              color: context.colors.secondBG,
+                                              borderRadius: BorderRadius.circular(24.0),
+                                              border: Border.all(color: context.colors.border.withOpacity(0.6)),
+                                            ),
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize.min, // Диалог сожмется под размер контента
+                                              children: [
+                                                Row(
+                                                  mainAxisAlignment: MainAxisAlignment.start,
+                                                  crossAxisAlignment: CrossAxisAlignment.start, // Выравнивание иконки и текста по верхней линии
+                                                  children: [
+                                                    Icon(AppIcons.delete, size: 36),
+                                                    const SizedBox(width: 8), // 8 пикселей между иконкой и текстом
+                                                    Expanded(
+                                                      child: Column(
+                                                        crossAxisAlignment: CrossAxisAlignment.start, // Прижали тексты к левому краю
+                                                        children: [
+                                                          Text(
+                                                            context.l1n('deleteNote'),
+                                                            style: TextStyle(
+                                                              color: context.colors.primaryText,
+                                                              fontSize: 16.0,
+                                                              decoration: TextDecoration.none,
+                                                              fontWeight: FontWeight.bold, // Сделали заголовок выразительнее
+                                                            ),
+                                                          ),
+                                                          const SizedBox(height: 4), // Небольшой отступ между заголовком и подзаголовком
+                                                          Text(
+                                                            context.l1n('undone'),
+                                                            style: TextStyle(
+                                                              color: context.colors.secondText,
+                                                              fontSize: 12.0,
+                                                              decoration: TextDecoration.none,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 24), // 24 пикселя между блоком текста и кнопками
+                                                Row(
+                                                  mainAxisAlignment: MainAxisAlignment.end,
+                                                  children: [
+                                                    ElevatedButton(
+                                                      style: ElevatedButton.styleFrom(
+                                                        backgroundColor: context.colors.thirdBG,
+                                                        foregroundColor: context.colors.primaryText,
+                                                        shape: RoundedRectangleBorder(
+                                                          borderRadius: BorderRadius.circular(8), // Исправлена ошибка BorderRadiusGeometry
+                                                        ),
+                                                      ),
+                                                      onPressed: () => Navigator.pop(context),
+                                                      child: Text(context.l1n('cancel')),
+                                                    ),
+                                                    const SizedBox(width: 8), // 8 пикселей между кнопками
+                                                    ElevatedButton(
+                                                      style: ElevatedButton.styleFrom(
+                                                        backgroundColor: context.colors.error,
+                                                        foregroundColor: Color(0xFFFFFFFF),
+                                                        shape: RoundedRectangleBorder(
+                                                          borderRadius: BorderRadius.circular(8), // Исправлена ошибка BorderRadiusGeometry
+                                                        ),
+                                                      ),
+                                                      onPressed: () {
+                                                        _deleteNote();
+                                                        Navigator.pop(context); // Закрываем диалог после удаления
+                                                      },
+                                                      child: Text(context.l1n('delete')),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(onPressed: _makeBold, icon: Icon(AppIcons.bold), iconSize: 14),
-                          IconButton(onPressed: _makeItalic, icon: Icon(AppIcons.italic), iconSize: 14),
-                          IconButton(onPressed: _numderList, icon: Icon(AppIcons.listNumber), iconSize: 14),
-                          IconButton(onPressed: _dotList, icon: Icon(AppIcons.listDots), iconSize: 14),
-                        ],
+                      // Редактор
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                        child: TextField(
+                          controller: _titleController,
+                          decoration: InputDecoration(
+                            hintText: context.l1n('titleHint'),
+                            border: UnderlineInputBorder(
+                              borderSide: BorderSide(color: context.colors.border),
+                            )
+                          ),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 8.0),
-                    // Кнопка экспорта
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 2.0, vertical: 2.0),
-                      decoration: BoxDecoration(
-                        color: lightSecondBG,
-                        border: Border.all(color: lightBorder.withOpacity(0.6)),
-                        borderRadius: BorderRadius.circular(32.0),
+                      
+                      Expanded(
+                        child: QuillEditor.basic(
+                          controller: _textController,
+                          config: const QuillEditorConfig(
+                            placeholder: 'Start typing...'
+                          ),
+                        ),
                       ),
-                      child: IconButton(onPressed: _export, icon: Icon(AppIcons.export)),
-                    ),
-                    const SizedBox(width: 8.0),
-                    // Кнопка удаления
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 2.0, vertical: 2.0),
-                      decoration: BoxDecoration(
-                        color: lightSecondBG,
-                        border: Border.all(color: lightBorder.withOpacity(0.6)),
-                        borderRadius: BorderRadius.circular(32.0),
-                      ),
-                      child: IconButton(
-                        icon: Icon(AppIcons.delete),
-                        onPressed: () {
-                          showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return AlertDialog(
-                                title: Text('Delete?'),
-                                content: Text('Are you sure?'),
-                                actions: [
-                                  ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: lightThirdBg,
-                                      foregroundColor: lightMainText,
-                                    ),
-                                    onPressed: () => Navigator.pop(context),
-                                    child: Text('Cancel'),
-                                  ),
-                                  ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: error,
-                                      foregroundColor: buttonText,
-                                    ),
-                                    onPressed: _deleteNote,
-                                    child: Text('Delete'),
-                                  ),
-                                ],
-                              );
-                            },
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+                    ],
+                  ),
             ),
-            // Редактор
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: TextField(
-                controller: _titleController,
-                decoration: InputDecoration(
-                  hintText: "Enter note title",
-                  border: UnderlineInputBorder(
-                    borderSide: BorderSide(color: lightBorder),
-                  )
-                ),
-              ),
-            ),
-            
-            Expanded(
-              child: QuillEditor.basic(
-                controller: _textController,
-                config: const QuillEditorConfig(
-                  placeholder: 'Start typing...'
-                ),
-              ),
-            ),
-          ],
-        ),
-  ),
-),
-],),
+          ),
+          ],),
           
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _saveNote,
@@ -425,13 +545,17 @@ class _MyHomePageState extends State<MyHomePage> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(32)
         ),
-        backgroundColor: accent,
-        hoverColor: accentHover,
-        focusColor: accentActive,
-        foregroundColor: buttonText,
+        backgroundColor: context.colors.accent,
+        hoverColor: context.colors.accentHover,
+        focusColor: context.colors.accentActive,
+        foregroundColor: Color(0xFFFFFFFF),
         icon: const Icon(AppIcons.save), // Иконка
-        label: const Text('Save Note'), // Текст
+        label: Text(context.l1n('saveNote')), // Текст
       ),
     );
   }
+}
+
+extension LocalizationExtension on BuildContext {
+  String l1n(String key) => AppLocalizations.of(this)?.translate(key) ?? key;
 }
