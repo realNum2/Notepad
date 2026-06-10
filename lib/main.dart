@@ -7,6 +7,10 @@ import 'package:my_app/note.dart';
 import 'app_colors.dart';
 import 'app_localization.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'dart:io';
+import 'dart:convert';
+import 'dart:typed_data';
+import 'package:file_picker/file_picker.dart';
 
 // _________________________________________________________
 // ICONS
@@ -111,6 +115,10 @@ class _MyHomePageState extends State<MyHomePage> {
   List<Note> _notes = [];
   String? _selectedIndex;
 
+
+// _________________________________________________________
+// ADD NOTE
+// _________________________________________________________
   void _addNote() {
     String noteID = DateTime.now().millisecondsSinceEpoch.toString();
     Note newNote = Note(id: noteID, title: '', text: '');
@@ -121,6 +129,10 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+
+// _________________________________________________________
+// SAVE NOTE
+// _________________________________________________________
   void _saveNote() {
     final selectedNote = _notes.indexWhere((element) => element.id == _selectedIndex);
     if(selectedNote != -1) {
@@ -130,6 +142,10 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+
+// _________________________________________________________
+// SELECT NOTE
+// _________________________________________________________
   void _selectNote(Note note) {
     setState(() {
       _selectedIndex = note.id;
@@ -146,6 +162,10 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+
+// _________________________________________________________
+// DELETE NOTE
+// _________________________________________________________
   void _deleteNote() {
     final deletedNote = _notes.indexWhere((element) => element.id == _selectedIndex);
     
@@ -156,8 +176,49 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  void _export() {
 
+// _________________________________________________________
+// EXPORT
+// _________________________________________________________
+  void _export() async {
+    final delta = _textController.document.toDelta();
+    final markdownString = DeltaToMarkdown().convert(delta);
+
+    final String defaultName = _titleController.text.isNotEmpty 
+      ? "${_titleController.text}.md" 
+      : "note.md";
+
+      try {
+    // Открываем диалог сохранения (возвращает String? путь на ПК)
+      final String? outputPath = await FilePicker.platform.saveFile(
+        dialogTitle: 'Экспорт заметки в Markdown',
+        fileName: defaultName,
+        type: FileType.custom,
+        allowedExtensions: ['md'],
+      );
+
+      // Если пользователь закрыл окно сохранения
+      if (outputPath == null) return;
+
+      // На ПК пишем строку напрямую в файл по полученному пути
+      final file = File(outputPath);
+      await file.writeAsString(markdownString);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Файл успешно сохранен на диск!')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Ошибка сохранения файла: $e')),
+      );
+    }
+  }
+
+// _________________________________________________________
+// IMPORT
+// _________________________________________________________
+  void _import() async {
+    final md = DeltaToMarkdown().convert(_textController.document.toDelta());
   }
 
     // void toggleLanguage() {
@@ -168,6 +229,11 @@ class _MyHomePageState extends State<MyHomePage> {
     // }
   // }
 // 
+
+
+// _________________________________________________________
+// NUM LIST
+// _________________________________________________________
   void _numderList() {
   final selected = _textController.selection;
 
@@ -178,6 +244,10 @@ class _MyHomePageState extends State<MyHomePage> {
   );
   }
 
+
+// _________________________________________________________
+// DOT LIST
+// _________________________________________________________
   void _dotList() {
   final selected = _textController.selection;
 
@@ -188,6 +258,10 @@ class _MyHomePageState extends State<MyHomePage> {
   );
   }
 
+
+// _________________________________________________________
+// BOLD
+// _________________________________________________________
   void _makeBold() {
     final selected = _textController.selection;
 
@@ -202,6 +276,10 @@ class _MyHomePageState extends State<MyHomePage> {
   );
   }
 
+
+// _________________________________________________________
+// ITALIC
+// _________________________________________________________
   void _makeItalic() {
     final selected = _textController.selection;
 
@@ -405,6 +483,19 @@ class _MyHomePageState extends State<MyHomePage> {
                                 ),
                                 child: IconButton(onPressed: _export, icon: Icon(AppIcons.export)),
                               ),
+
+                              const SizedBox(width: 8.0),
+                              // Кнопка экспорта
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 2.0, vertical: 2.0),
+                                decoration: BoxDecoration(
+                                  color: context.colors.secondBG,
+                                  border: Border.all(color: context.colors.border.withOpacity(0.6)),
+                                  borderRadius: BorderRadius.circular(32.0),
+                                ),
+                                child: IconButton(onPressed: _import, icon: Icon(Icons.import_export_rounded)),
+                              ),
+
                               const SizedBox(width: 8.0),
                               // Кнопка удаления
                               Container(
