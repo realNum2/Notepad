@@ -11,6 +11,8 @@ import 'dart:io';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
+import 'package:markdown/markdown.dart' as md;
+
 
 // _________________________________________________________
 // ICONS
@@ -30,6 +32,7 @@ import 'package:file_picker/file_picker.dart';
     static const IconData profile = IconData(61450, fontFamily: _fontFamily);
     static const IconData theme = IconData(61448, fontFamily: _fontFamily);
     static const IconData language = IconData(61449, fontFamily: _fontFamily);
+    static const IconData import = IconData(61451, fontFamily: _fontFamily);
   }
 
 
@@ -218,17 +221,25 @@ class _MyHomePageState extends State<MyHomePage> {
 // IMPORT
 // _________________________________________________________
   void _import() async {
-    final md = DeltaToMarkdown().convert(_textController.document.toDelta());
-  }
+    final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['md'],
+    );
 
-    // void toggleLanguage() {
-    // if (langNotifier.value == 'ru') {
-      // langNotifier.value = 'en';
-    // } else {
-      // langNotifier.value = 'ru';
-    // }
-  // }
-// 
+  if (result == null) return;
+
+    final file = File(result.files.single.path!);
+    final markdownString = await file.readAsString();
+
+    final mdToDelta = MarkdownToDelta(markdownDocument: md.Document());
+    final delta = mdToDelta.convert(markdownString);
+
+    setState(() {
+        _addNote();
+        _textController.document = Document.fromJson(delta.toJson());
+        _titleController.text = result.files.single.name.replaceAll('.md', '');
+    });
+  }
 
 
 // _________________________________________________________
@@ -293,6 +304,31 @@ class _MyHomePageState extends State<MyHomePage> {
     isItalic ? Attribute.clone(Attribute.italic, null) : Attribute.italic,
   );
   }
+
+
+// _________________________________________________________
+// THEME
+// _________________________________________________________
+  void _themeToggle() {
+    if (themeNotifier.value == ThemeMode.light) {
+        themeNotifier.value = ThemeMode.dark;
+    } else {
+      themeNotifier.value = ThemeMode.light;
+    }
+  }
+
+
+// _________________________________________________________
+// LANGUAGE
+// _________________________________________________________
+  void _langToggle() {
+    if (langNotifier.value == 'ru') {
+      langNotifier.value = 'en';
+    } else {
+      langNotifier.value = 'ru';
+    }
+  }
+
 
 
   @override
@@ -415,20 +451,8 @@ class _MyHomePageState extends State<MyHomePage> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    IconButton(onPressed: (){
-                      if (themeNotifier.value == ThemeMode.light) {
-                        themeNotifier.value = ThemeMode.dark;
-                      } else {
-                        themeNotifier.value = ThemeMode.light;
-                      }
-                    }, icon: Icon(AppIcons.theme), iconSize: 24, color: context.colors.primaryText,),
-                    IconButton(onPressed: (){setState(() { // Заставляет MyHomePage обновить все свои строки context.l1n()
-    if (langNotifier.value == 'ru') {
-      langNotifier.value = 'en';
-    } else {
-      langNotifier.value = 'ru';
-    }
-  });}, icon: Icon(AppIcons.language), iconSize: 24, color: context.colors.primaryText,),
+                    IconButton(onPressed: _themeToggle, icon: Icon(AppIcons.theme), iconSize: 24, color: context.colors.primaryText,),
+                    IconButton(onPressed: _langToggle, icon: Icon(AppIcons.language), iconSize: 24, color: context.colors.primaryText,),
                     IconButton(onPressed: (){}, icon: Icon(AppIcons.profile), iconSize: 24, color: context.colors.disabledText,)
                   ],
                 ),
@@ -493,7 +517,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                   border: Border.all(color: context.colors.border.withOpacity(0.6)),
                                   borderRadius: BorderRadius.circular(32.0),
                                 ),
-                                child: IconButton(onPressed: _import, icon: Icon(Icons.import_export_rounded)),
+                                child: IconButton(onPressed: _import, icon: Icon(AppIcons.import)),
                               ),
 
                               const SizedBox(width: 8.0),
